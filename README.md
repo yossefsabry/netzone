@@ -1,4 +1,21 @@
-# NetAccess
+<p align="center">
+  <img src="assets/logo.svg" width="160" alt="NetAccess Logo" />
+</p>
+
+<h1 align="center">NetAccess</h1>
+
+<p align="center">
+  A non-root Android firewall application designed to provide granular control over per-application network access.
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Language-Kotlin-blue" alt="Language" />
+  <img src="https://img.shields.io/badge/Platform-Android-green" alt="Platform" />
+  <img src="https://img.shields.io/badge/License-MIT-orange" alt="License" />
+  <img src="https://img.shields.io/badge/Status-Active-brightgreen" alt="Status" />
+</p>
+
+<hr />
 
 NetAccess is a non-root Android firewall application designed to provide granular control over per-application network access. By implementing a local VPN sinkhole using the Android VpnService API, the application enables users to restrict network traffic for specific applications based on connection type, time-based schedules, or cumulative daily usage thresholds.
 
@@ -60,4 +77,4 @@ NetAccess functions by initializing a local VPN interface that serves as a contr
 This project is distributed under the terms of the MIT License. For further details, please refer to the [LICENSE](LICENSE) file included in the repository.
 
 ---
-Copyright © 2025 Yossef Sabry
+Copyright © 2026 Yossef Sabry

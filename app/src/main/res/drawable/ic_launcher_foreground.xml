@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Outer Harmonic Rings -->
+    <path
+        android:pathData="M54,24 L84,34 L84,54 C84,74 74,84 54,94 C34,84 24,74 24,54 L24,34 Z"
+        android:strokeWidth="1"
+        android:strokeColor="#4D00FF"
+        android:strokeAlpha="0.3" />
+    <path
+        android:pathData="M54,28 L80,36 L80,54 C80,70 70,80 54,88 C38,80 28,70 28,54 L28,36 Z"
+        android:strokeWidth="1"
+        android:strokeColor="#4D00FF"
+        android:strokeAlpha="0.5" />
+        
+    <!-- Pulse Filaments (Abstract Cyan lines) -->
+    <path
+        android:pathData="M20,20 L30,30 M88,88 L78,78 M20,88 L30,78 M88,20 L78,30"
+        android:strokeWidth="2"
+        android:strokeColor="#00F2FF"
+        android:strokeAlpha="0.4"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M54,15 L54,25 M54,93 L54,83 M15,54 L25,54 M93,54 L83,54"
+        android:strokeWidth="1"
+        android:strokeColor="#00F2FF"
+        android:strokeAlpha="0.6" />
+
+    <!-- Main Shield Frame -->
+    <path
+        android:pathData="M54,32 L76,40 L76,54 C76,68 68,76 54,84 C40,76 32,68 32,54 L32,40 Z"
+        android:strokeWidth="3"
+        android:strokeColor="#00F2FF"
+        android:fillColor="#00000000" />
+        
+    <!-- Core Glow -->
+    <path
+        android:pathData="M54,42 L66,46 L66,54 C66,62 62,66 54,70 C46,66 42,62 42,54 L42,46 Z"
+        android:fillColor="#00F2FF"
+        android:fillAlpha="0.2" />
+
+</vector>

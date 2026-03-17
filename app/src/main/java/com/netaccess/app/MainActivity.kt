@@ -1,12 +1,16 @@
 package com.netaccess.app
 
+import android.Manifest
+import android.app.AlarmManager
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.net.VpnService
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -41,9 +45,21 @@ import kotlinx.coroutines.launch
 import java.util.*
 
 class MainActivity : ComponentActivity() {
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        // Handle result
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val preferenceManager = PreferenceManager(this)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
 
         setContent {
             val isDarkMode by preferenceManager.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
@@ -174,10 +190,16 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     }
 
     var hasUsagePermission by remember { mutableStateOf(true) }
+    var hasExactAlarmPermission by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
         val mode = appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
         hasUsagePermission = mode == android.app.AppOpsManager.MODE_ALLOWED
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            hasExactAlarmPermission = alarmManager.canScheduleExactAlarms()
+        }
     }
 
     Scaffold(
@@ -208,7 +230,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                         color = MaterialTheme.colorScheme.errorContainer,
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         onClick = {
-                            context.startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
+                            context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
                         },
                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
                     ) {
@@ -216,6 +238,25 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text("Grant Usage Access for Daily Limits", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                        }
+                    }
+                }
+
+                if (!hasExactAlarmPermission) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        onClick = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                            }
+                        },
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                    ) {
+                        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Grant Exact Alarm Permission for Schedules", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
                         }
                     }
                 }

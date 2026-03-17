@@ -41,10 +41,14 @@ class NetAccessVpnService : VpnService() {
         const val ACTION_RELOAD = "com.netaccess.app.RELOAD"
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "netaccess_vpn_channel"
+
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
     }
 
     override fun onCreate() {
         super.onCreate()
+        _isRunning.value = true
         val db = AppDatabase.getDatabase(this)
         repository = RuleRepository.getInstance(db.ruleDao())
         usageTracker = UsageTracker(this)
@@ -300,6 +304,7 @@ class NetAccessVpnService : VpnService() {
 
     override fun onDestroy() {
         Log.i(TAG, "Service destroyed")
+        _isRunning.value = false
         drainJob?.cancel()
         vpnInterface?.close()
         serviceScope.cancel()

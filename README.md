@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/logo.svg" width="160" alt="NetAccess Logo" />
+  <img src="assets/main_logo.png" width="160" alt="NetZone Logo" />
 </p>
 
-<h1 align="center">NetAccess</h1>
+<h1 align="center">NetZone</h1>
 
 <p align="center">
   A non-root Android firewall application designed to provide granular control over per-application network access.
@@ -17,7 +17,7 @@
 
 <hr />
 
-NetAccess is a non-root Android firewall application designed to provide granular control over per-application network access. By implementing a local VPN sinkhole using the Android VpnService API, the application enables users to restrict network traffic for specific applications based on connection type, time-based schedules, or cumulative daily usage thresholds.
+NetZone is a non-root Android firewall application designed to provide granular control over per-application network access. By implementing a local VPN sinkhole using the Android VpnService API, the application enables users to restrict network traffic for specific applications based on connection type, time-based schedules, or cumulative daily usage thresholds.
 
 ## Features
 
@@ -70,7 +70,7 @@ To generate a release-ready APK, ensure that your signing configurations are cor
 
 ## System Architecture
 
-NetAccess functions by initializing a local VPN interface that serves as a controlled gateway for device traffic. When an application is subjected to a blocking rule, the service dynamically reconfigures the routing table to direct that application's packets into the virtual tunnel. Rather than forwarding this traffic to a remote gateway, the service silently discards the packets (the "drain" process), effectively neutralizing the application's network capabilities without disrupting the connectivity of other system components.
+NetZone functions by initializing a local VPN interface that serves as a controlled gateway for device traffic. When an application is subjected to a blocking rule, the service dynamically reconfigures the routing table to direct that application's packets into the virtual tunnel. Rather than forwarding this traffic to a remote gateway, the service silently discards the packets (the "drain" process), effectively neutralizing the application's network capabilities without disrupting the connectivity of other system components.
 
 ## License
 

@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.CoroutineScope

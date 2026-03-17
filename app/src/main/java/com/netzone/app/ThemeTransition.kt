@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter

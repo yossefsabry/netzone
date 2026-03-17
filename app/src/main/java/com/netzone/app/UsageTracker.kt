@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.app.usage.UsageStatsManager
 import android.content.Context

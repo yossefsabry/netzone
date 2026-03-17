@@ -3,19 +3,19 @@
 # proguardFiles setting in build.gradle.
 
 # Keep Room entities
--keep class com.netaccess.app.Rule { *; }
--keep class com.netaccess.app.AppSchedule { *; }
+-keep class com.netzone.app.Rule { *; }
+-keep class com.netzone.app.AppSchedule { *; }
 
 # Keep DAOs
--keep interface com.netaccess.app.RuleDao { *; }
--keep interface com.netaccess.app.AppScheduleDao { *; }
+-keep interface com.netzone.app.RuleDao { *; }
+-keep interface com.netzone.app.AppScheduleDao { *; }
 
 # Keep Database
--keep class com.netaccess.app.AppDatabase { *; }
+-keep class com.netzone.app.AppDatabase { *; }
 
 # Keep Services
--keep class com.netaccess.app.NetAccessVpnService { *; }
--keep class com.netaccess.app.VpnScheduler { *; }
+-keep class com.netzone.app.NetZoneVpnService { *; }
+-keep class com.netzone.app.VpnScheduler { *; }
 
 # Keep Compose
 -keep class androidx.compose.** { *; }

@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

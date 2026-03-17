@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.content.Context
 import androidx.room.Database
@@ -19,7 +19,7 @@ abstract class AppDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "netaccess_database"
+                    "netzone_database"
                 )
                 .fallbackToDestructiveMigration() // Migration for development
                 .build()

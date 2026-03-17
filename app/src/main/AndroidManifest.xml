@@ -21,7 +21,7 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.NetAccess">
+        android:theme="@style/Theme.NetZone">
 
         <activity
             android:name=".MainActivity"
@@ -34,7 +34,7 @@
         </activity>
 
         <service
-            android:name=".NetAccessVpnService"
+            android:name=".NetZoneVpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
             android:exported="false"
             android:foregroundServiceType="systemExempted">
@@ -48,7 +48,7 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="com.netaccess.app.UPDATE_VPN" />
+                <action android:name="com.netzone.app.UPDATE_VPN" />
             </intent-filter>
         </receiver>
     </application>

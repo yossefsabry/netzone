@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "NetAccess"
+rootProject.name = "NetZone"
 include(":app")

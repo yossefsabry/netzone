@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager

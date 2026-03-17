@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.app.*
 import android.content.Context
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.*
 import java.io.FileInputStream
 import java.util.*
 
-class NetAccessVpnService : VpnService() {
+class NetZoneVpnService : VpnService() {
 
     private var vpnInterface: ParcelFileDescriptor? = null
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -37,11 +37,11 @@ class NetAccessVpnService : VpnService() {
     private var reloadJob: Job? = null
 
     companion object {
-        private const val TAG = "NetAccessVPN"
-        const val ACTION_RELOAD = "com.netaccess.app.RELOAD"
-        const val ACTION_STOP = "com.netaccess.app.STOP"
+        private const val TAG = "NetZoneVPN"
+        const val ACTION_RELOAD = "com.netzone.app.RELOAD"
+        const val ACTION_STOP = "com.netzone.app.STOP"
         const val NOTIFICATION_ID = 1001
-        const val CHANNEL_ID = "netaccess_vpn_channel"
+        const val CHANNEL_ID = "netzone_vpn_channel"
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -203,7 +203,7 @@ class NetAccessVpnService : VpnService() {
 
         try {
             val builder = Builder()
-                .setSession("NetAccess")
+                .setSession("NetZone")
                 .addAddress("10.0.0.2", 32)
                 .addAddress("fd00:1::2", 128)
                 .addRoute("0.0.0.0", 0)
@@ -307,7 +307,7 @@ class NetAccessVpnService : VpnService() {
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
-            .setContentTitle("NetAccess Firewall")
+            .setContentTitle("NetZone Firewall")
             .setContentText(content)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)

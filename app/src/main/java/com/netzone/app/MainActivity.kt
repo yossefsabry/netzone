@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.Manifest
 import android.app.AlarmManager
@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
                 ThemeTransitionController.attachIfPending(this@MainActivity)
             }
 
-            NetAccessTheme(isDark = isDarkMode) {
+            NetZoneTheme(isDark = isDarkMode) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainScreen(
                         isDarkMode = isDarkMode,
@@ -113,7 +113,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showOnlyBlocked by viewModel.showOnlyBlocked.collectAsStateWithLifecycle()
     val showOnlySystem by viewModel.showOnlySystem.collectAsStateWithLifecycle()
-    val isVpnRunning by NetAccessVpnService.isRunning.collectAsStateWithLifecycle(initialValue = false)
+    val isVpnRunning by NetZoneVpnService.isRunning.collectAsStateWithLifecycle(initialValue = false)
     var isStarting by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     
@@ -123,7 +123,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
 
     val vpnLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
-            context.startService(Intent(context, NetAccessVpnService::class.java))
+            context.startService(Intent(context, NetZoneVpnService::class.java))
         } else {
             isStarting = false
         }
@@ -149,7 +149,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                 TopAppBar(
                     title = {
                         Text(
-                            "NA", 
+                            "NZ",
                             fontWeight = FontWeight.ExtraBold, 
                             style = MaterialTheme.typography.headlineMedium,
                             color = MaterialTheme.colorScheme.primary
@@ -165,14 +165,14 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                         }
                         IconButton(onClick = {
                             if (isVpnRunning) {
-                                context.startService(Intent(context, NetAccessVpnService::class.java).apply { 
-                                    action = NetAccessVpnService.ACTION_STOP 
+                                context.startService(Intent(context, NetZoneVpnService::class.java).apply { 
+                                    action = NetZoneVpnService.ACTION_STOP 
                                 })
                             } else {
                                 isStarting = true
                                 val intent = VpnService.prepare(context)
                                 if (intent != null) vpnLauncher.launch(intent)
-                                else context.startService(Intent(context, NetAccessVpnService::class.java))
+                                else context.startService(Intent(context, NetZoneVpnService::class.java))
                             }
                         }) {
                             Icon(
@@ -506,7 +506,7 @@ fun formatTime(minutes: Int): String {
 }
 
 @Composable
-private fun NetAccessTheme(isDark: Boolean = false, content: @Composable () -> Unit) {
+private fun NetZoneTheme(isDark: Boolean = false, content: @Composable () -> Unit) {
     val darkColorScheme = darkColorScheme(
         primary = Color(0xFFA5C9FF),
         onPrimary = Color(0xFF00325B),

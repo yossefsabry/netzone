@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

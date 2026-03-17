@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow

@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -13,14 +13,14 @@ import kotlinx.coroutines.launch
 class VpnScheduler : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == "com.netaccess.app.UPDATE_VPN") {
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED || intent.action == "com.netzone.app.UPDATE_VPN") {
             reloadVpn(context)
         }
     }
 
     companion object {
         fun reloadVpn(context: Context) {
-            val vpnIntent = Intent(context, NetAccessVpnService::class.java)
+            val vpnIntent = Intent(context, NetZoneVpnService::class.java)
             context.startService(vpnIntent)
             
             scheduleNextAlarm(context)
@@ -29,7 +29,7 @@ class VpnScheduler : BroadcastReceiver() {
         private fun scheduleNextAlarm(context: Context) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val intent = Intent(context, VpnScheduler::class.java).apply {
-                action = "com.netaccess.app.UPDATE_VPN"
+                action = "com.netzone.app.UPDATE_VPN"
             }
             val pendingIntent = PendingIntent.getBroadcast(
                 context, 0, intent,

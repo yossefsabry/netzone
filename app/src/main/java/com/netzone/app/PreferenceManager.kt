@@ -1,4 +1,4 @@
-package com.netaccess.app
+package com.netzone.app
 
 import android.content.Context
 import androidx.datastore.core.DataStore

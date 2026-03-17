@@ -6,11 +6,11 @@ plugins {
 
 android {
     // ... rest of android block
-    namespace = "com.netaccess.app"
+    namespace = "com.netzone.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.netaccess.app"
+        applicationId = "com.netzone.app"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -21,7 +21,7 @@ android {
             useSupportLibrary = true
         }
         
-        buildConfigField("String", "APP_NAME", "\"NetAccess\"")
+        buildConfigField("String", "APP_NAME", "\"NetZone\"")
     }
 
     buildTypes {

@@ -424,6 +424,7 @@ fun AppRuleItem(app: AppInfo, rule: Rule, onUpdate: (Rule) -> Unit) {
         }
     }
 }
+}
 
 fun formatTime(minutes: Int): String {
     val h = minutes / 60

@@ -47,7 +47,7 @@ import java.util.*
 class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
+    ) { _: Boolean ->
         // Handle result
     }
 
@@ -171,6 +171,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     
     val viewModel: MainViewModel = viewModel(
         factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 return MainViewModel(repository, context.packageManager) as T
             }
@@ -194,7 +195,12 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     var hasExactAlarmPermission by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
-        val mode = appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
+        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            appOps.unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
+        } else {
+            @Suppress("DEPRECATION")
+            appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
+        }
         hasUsagePermission = mode == android.app.AppOpsManager.MODE_ALLOWED
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

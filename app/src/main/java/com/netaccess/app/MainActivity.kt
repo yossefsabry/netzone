@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import androidx.compose.ui.res.painterResource
 import java.util.*
 
 class MainActivity : ComponentActivity() {
@@ -173,7 +174,10 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
         factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return MainViewModel(repository, context.packageManager) as T
+                if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
+                    return MainViewModel(repository, context.packageManager) as T
+                }
+                throw IllegalArgumentException("Unknown ViewModel class")
             }
         }
     )
@@ -183,7 +187,8 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showOnlyBlocked by viewModel.showOnlyBlocked.collectAsStateWithLifecycle()
     val showOnlySystem by viewModel.showOnlySystem.collectAsStateWithLifecycle()
-    val isVpnRunning by NetAccessVpnService.isRunning.collectAsStateWithLifecycle()
+    val isVpnRunning by NetAccessVpnService.isRunning.collectAsStateWithLifecycle(initialValue = false)
+    var showMenu by remember { mutableStateOf(false) }
     
     val vpnLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
@@ -195,12 +200,8 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     var hasExactAlarmPermission by remember { mutableStateOf(true) }
     LaunchedEffect(Unit) {
         val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as android.app.AppOpsManager
-        val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            appOps.unsafeCheckOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
-        } else {
-            @Suppress("DEPRECATION")
-            appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
-        }
+        @Suppress("DEPRECATION")
+        val mode = appOps.checkOpNoThrow(android.app.AppOpsManager.OPSTR_GET_USAGE_STATS, android.os.Process.myUid(), context.packageName)
         hasUsagePermission = mode == android.app.AppOpsManager.MODE_ALLOWED
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -213,7 +214,14 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("NetAccess", fontWeight = FontWeight.Bold) },
+                    title = {
+                        Text(
+                            "NA", 
+                            fontWeight = FontWeight.ExtraBold, 
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    },
                     actions = {
                         IconButton(onClick = onToggleTheme) {
                             Icon(
@@ -224,7 +232,9 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                         }
                         IconButton(onClick = {
                             if (isVpnRunning) {
-                                context.startService(Intent(context, NetAccessVpnService::class.java).apply { action = NetAccessVpnService.ACTION_STOP })
+                                context.startService(Intent(context, NetAccessVpnService::class.java).apply { 
+                                    action = NetAccessVpnService.ACTION_STOP 
+                                })
                             } else {
                                 val intent = VpnService.prepare(context)
                                 if (intent != null) vpnLauncher.launch(intent)
@@ -234,10 +244,15 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                             Icon(
                                 Icons.Default.PowerSettingsNew, 
                                 contentDescription = if (isVpnRunning) "Stop VPN" else "Start VPN", 
-                                tint = if (isVpnRunning) MaterialTheme.colorScheme.error else Color(0xFF4CAF50)
+                                tint = if (isVpnRunning) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                                modifier = Modifier.size(28.dp)
                             )
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
 
                 if (!hasUsagePermission) {

@@ -148,12 +148,22 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
             Column {
                 TopAppBar(
                     title = {
-                        Text(
-                            "NZ",
-                            fontWeight = FontWeight.ExtraBold, 
-                            style = MaterialTheme.typography.headlineMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.netzone_launcher_foreground),
+                                contentDescription = "NetZone icon",
+                                modifier = Modifier.size(50.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "NZ",
+                                fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     },
                     actions = {
                         IconButton(onClick = onToggleTheme) {

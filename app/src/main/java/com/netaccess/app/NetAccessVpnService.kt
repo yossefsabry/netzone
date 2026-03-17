@@ -49,7 +49,6 @@ class NetAccessVpnService : VpnService() {
 
     override fun onCreate() {
         super.onCreate()
-        _isRunning.value = true
         val db = AppDatabase.getDatabase(this)
         repository = RuleRepository.getInstance(db.ruleDao())
         usageTracker = UsageTracker(this)
@@ -66,6 +65,9 @@ class NetAccessVpnService : VpnService() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        
+        // Mark as running only after foreground is established
+        _isRunning.value = true
 
         observeNetwork()
         observeRules()
@@ -304,11 +306,11 @@ class NetAccessVpnService : VpnService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_lock_lock)
+            .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("NetAccess Firewall")
             .setContentText(content)
             .setContentIntent(pendingIntent)
-            .setPriority(NotificationCompat.PRIORITY_MIN)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .build()
     }
@@ -321,7 +323,7 @@ class NetAccessVpnService : VpnService() {
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
-                CHANNEL_ID, "Firewall Status", NotificationManager.IMPORTANCE_LOW
+                CHANNEL_ID, "Firewall Status", NotificationManager.IMPORTANCE_DEFAULT
             )
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(channel)

@@ -114,11 +114,18 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
     val showOnlyBlocked by viewModel.showOnlyBlocked.collectAsStateWithLifecycle()
     val showOnlySystem by viewModel.showOnlySystem.collectAsStateWithLifecycle()
     val isVpnRunning by NetAccessVpnService.isRunning.collectAsStateWithLifecycle(initialValue = false)
+    var isStarting by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
     
+    LaunchedEffect(isVpnRunning) {
+        isStarting = false
+    }
+
     val vpnLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
             context.startService(Intent(context, NetAccessVpnService::class.java))
+        } else {
+            isStarting = false
         }
     }
 
@@ -162,6 +169,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                                     action = NetAccessVpnService.ACTION_STOP 
                                 })
                             } else {
+                                isStarting = true
                                 val intent = VpnService.prepare(context)
                                 if (intent != null) vpnLauncher.launch(intent)
                                 else context.startService(Intent(context, NetAccessVpnService::class.java))
@@ -169,8 +177,16 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                         }) {
                             Icon(
                                 Icons.Default.PowerSettingsNew, 
-                                contentDescription = if (isVpnRunning) "Stop VPN" else "Start VPN", 
-                                tint = if (isVpnRunning) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                                contentDescription = when {
+                                    isStarting -> "Starting VPN..."
+                                    isVpnRunning -> "Stop VPN"
+                                    else -> "Start VPN"
+                                }, 
+                                tint = when {
+                                    isStarting -> Color(0xFFFFA500) // Orange
+                                    isVpnRunning -> MaterialTheme.colorScheme.error 
+                                    else -> Color(0xFF4CAF50)
+                                },
                                 modifier = Modifier.size(28.dp)
                             )
                         }

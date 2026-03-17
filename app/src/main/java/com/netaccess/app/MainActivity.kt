@@ -257,42 +257,40 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                             DropdownMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false },
-                                modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                                modifier = Modifier
+                                    .width(220.dp)
+                                    .background(MaterialTheme.colorScheme.surface)
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Lockdown traffic") },
+                                    text = { Text("Lockdown traffic", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false },
                                     trailingIcon = { Checkbox(checked = false, onCheckedChange = null) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Show log") },
+                                    text = { Text("Show log", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false },
-                                    leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp)) }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Settings") },
+                                    text = { Text("Settings", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Pro features") },
+                                    text = { Text("Pro features", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false },
-                                    leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp)) }
+                                    leadingIcon = { Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp)) }
                                 )
-                                HorizontalDivider()
+                                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                                 DropdownMenuItem(
-                                    text = { Text("Legend") },
+                                    text = { Text("Legend", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Support") },
+                                    text = { Text("Support", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("About") },
-                                    onClick = { showMenu = false }
-                                )
-                                DropdownMenuItem(
-                                    text = { Text("Other apps") },
+                                    text = { Text("About", style = MaterialTheme.typography.bodyLarge) },
                                     onClick = { showMenu = false }
                                 )
                             }

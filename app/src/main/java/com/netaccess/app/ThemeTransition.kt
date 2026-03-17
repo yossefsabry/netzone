@@ -24,10 +24,18 @@ data class ThemeWavePalette(
 object ThemeTransitionController {
     private var pendingPalette: ThemeWavePalette? = null
 
-    fun prepareTransition(context: Context) {
-        // Use the colors we defined in colors.xml
-        val primary = ContextCompat.getColor(context, R.color.lanflix_primary)
-        val background = ContextCompat.getColor(context, R.color.lanflix_bg)
+    fun prepareTransition(context: Context, isDarkMode: Boolean) {
+        // Use the colors we defined in colors.xml based on the target theme
+        val primary = if (isDarkMode) {
+            ContextCompat.getColor(context, R.color.primary_dark)
+        } else {
+            ContextCompat.getColor(context, R.color.primary_light)
+        }
+        val background = if (isDarkMode) {
+            ContextCompat.getColor(context, R.color.bg_dark)
+        } else {
+            ContextCompat.getColor(context, R.color.bg_light)
+        }
         pendingPalette = ThemeWavePalette(primary, background)
     }
 

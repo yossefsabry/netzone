@@ -1,5 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="lanflix_primary">#8E5A3C</color>
-    <color name="lanflix_bg">#FFF2E4</color>
+    <!-- Light Theme Colors -->
+    <color name="primary_light">#0061A4</color>
+    <color name="on_primary_light">#FFFFFF</color>
+    <color name="primary_container_light">#D1E4FF</color>
+    <color name="on_primary_container_light">#001D36</color>
+    <color name="bg_light">#FDFCFF</color>
+    <color name="surface_light">#FDFCFF</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="primary_dark">#A5C9FF</color>
+    <color name="on_primary_dark">#00325B</color>
+    <color name="primary_container_dark">#00497E</color>
+    <color name="on_primary_container_dark">#D1E4FF</color>
+    <color name="bg_dark">#1A1C1E</color>
+    <color name="surface_dark">#1A1C1E</color>
 </resources>

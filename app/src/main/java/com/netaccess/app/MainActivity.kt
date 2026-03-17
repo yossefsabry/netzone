@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +59,7 @@ class MainActivity : ComponentActivity() {
                         isDarkMode = isDarkMode,
                         onToggleTheme = {
                             coroutineScope.launch {
-                                ThemeTransitionController.prepareTransition(this@MainActivity)
+                                ThemeTransitionController.prepareTransition(this@MainActivity, !isDarkMode)
                                 preferenceManager.setDarkMode(!isDarkMode)
                             }
                         }
@@ -183,12 +184,13 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text("NetAccess Firewall") },
+                    title = { Text("NetAccess", fontWeight = FontWeight.Bold) },
                     actions = {
                         IconButton(onClick = onToggleTheme) {
                             Icon(
                                 if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode, 
-                                contentDescription = "Toggle Theme"
+                                contentDescription = "Toggle Theme",
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                         IconButton(onClick = {
@@ -196,7 +198,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                             if (intent != null) vpnLauncher.launch(intent)
                             else context.startService(Intent(context, NetAccessVpnService::class.java))
                         }) {
-                            Icon(Icons.Default.PowerSettingsNew, contentDescription = "Start VPN")
+                            Icon(Icons.Default.PowerSettingsNew, contentDescription = "Start VPN", tint = Color(0xFF4CAF50))
                         }
                     }
                 )
@@ -204,16 +206,16 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                 if (!hasUsagePermission) {
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer,
-                        modifier = Modifier.fillMaxWidth().padding(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                         onClick = {
                             context.startActivity(Intent(android.provider.Settings.ACTION_USAGE_ACCESS_SETTINGS))
                         },
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
                     ) {
                         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Grant Usage Access for Daily Limits", style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text("Grant Usage Access for Daily Limits", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onErrorContainer)
                         }
                     }
                 }
@@ -221,24 +223,31 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.onSearchQueryChange(it) },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     placeholder = { Text("Search apps...") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
-                    singleLine = true
+                    singleLine = true,
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                    )
                 )
                 Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FilterChip(
                         selected = showOnlySystem,
                         onClick = { viewModel.toggleFilterSystem() },
-                        label = { Text("System Apps") }
+                        label = { Text("System Apps") },
+                        leadingIcon = { Icon(Icons.Default.Settings, null, modifier = Modifier.size(18.dp)) }
                     )
                     FilterChip(
                         selected = showOnlyBlocked,
                         onClick = { viewModel.toggleFilterBlocked() },
-                        label = { Text("Blocked Only") }
+                        label = { Text("Blocked Only") },
+                        leadingIcon = { Icon(Icons.Default.Block, null, modifier = Modifier.size(18.dp)) }
                     )
                 }
             }
@@ -259,117 +268,140 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
 @Composable
 fun AppRuleItem(app: AppInfo, rule: Rule, onUpdate: (Rule) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    
+    // Fetch the actual application icon from the system
+    val appIcon = remember(app.packageName) {
+        runCatching { context.packageManager.getApplicationIcon(app.packageName) }.getOrNull()
+    }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        ListItem(
-            headlineContent = { Text(app.name, fontWeight = FontWeight.Bold) },
-            supportingContent = { Text(app.packageName, fontSize = 12.sp) },
-            leadingContent = {
-                // Use Coil for lazy icon loading from package name
-                AsyncImage(
-                    model = app.packageName,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    // Custom fetcher for package icons is automatically handled by Coil in most setups,
-                    // but we can provide a fallback or placeholder here.
-                )
-            },
-            trailingContent = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { onUpdate(rule.copy(wifiBlocked = !rule.wifiBlocked)) }) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clickable { expanded = !expanded },
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = if (expanded) 8.dp else 0.dp,
+        shadowElevation = if (expanded) 4.dp else 0.dp,
+        border = if (!expanded) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            ListItem(
+                headlineContent = { Text(app.name, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleMedium) },
+                supportingContent = { Text(app.packageName, fontSize = 11.sp, color = MaterialTheme.colorScheme.secondary) },
+                leadingContent = {
+                    if (appIcon != null) {
+                        AsyncImage(
+                            model = appIcon,
+                            contentDescription = null,
+                            modifier = Modifier.size(44.dp).padding(2.dp)
+                        )
+                    } else {
                         Icon(
-                            imageVector = Icons.Default.Wifi,
-                            contentDescription = "WiFi",
-                            tint = if (rule.wifiBlocked) Color.Red else Color.Green
+                            imageVector = Icons.Default.Android,
+                            contentDescription = null,
+                            modifier = Modifier.size(44.dp).padding(2.dp),
+                            tint = MaterialTheme.colorScheme.outline
                         )
                     }
-                    IconButton(onClick = { onUpdate(rule.copy(mobileBlocked = !rule.mobileBlocked)) }) {
-                        Icon(
-                            imageVector = Icons.Default.SignalCellularAlt,
-                            contentDescription = "Mobile",
-                            tint = if (rule.mobileBlocked) Color.Red else Color.Green
-                        )
+                },
+                trailingContent = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { onUpdate(rule.copy(wifiBlocked = !rule.wifiBlocked)) }) {
+                            Icon(
+                                imageVector = Icons.Default.Wifi,
+                                contentDescription = "WiFi",
+                                tint = if (rule.wifiBlocked) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                        IconButton(onClick = { onUpdate(rule.copy(mobileBlocked = !rule.mobileBlocked)) }) {
+                            Icon(
+                                imageVector = Icons.Default.SignalCellularAlt,
+                                contentDescription = "Mobile",
+                                tint = if (rule.mobileBlocked) MaterialTheme.colorScheme.error else Color(0xFF4CAF50),
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
-                    IconButton(onClick = { expanded = !expanded }) {
-                        Icon(if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore, null)
-                    }
-                }
-            },
-            modifier = Modifier.clickable { expanded = !expanded }
-        )
+                },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+            )
 
-        AnimatedVisibility(visible = expanded) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                    .padding(8.dp)
-            ) {
-                Text("Advanced Rules", fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 8.dp))
-                
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                    Text("Schedule Blocking", modifier = Modifier.weight(1f))
-                    Switch(
-                        checked = rule.isScheduleEnabled,
-                        onCheckedChange = { onUpdate(rule.copy(isScheduleEnabled = it)) }
-                    )
-                }
-
-                if (rule.isScheduleEnabled) {
-                    val context = LocalContext.current
+            AnimatedVisibility(visible = expanded) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    HorizontalDivider(modifier = Modifier.padding(bottom = 12.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     
-                    // Day Picker
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        val days = listOf("S", "M", "T", "W", "T", "F", "S")
-                        days.forEachIndexed { index, day ->
-                            val isSelected = (rule.daysToBlock and (1 shl index)) != 0
-                            Surface(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clickable {
-                                        val newMask = rule.daysToBlock xor (1 shl index)
-                                        onUpdate(rule.copy(daysToBlock = newMask))
-                                    },
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.LightGray
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(day, color = if (isSelected) Color.White else Color.Black, fontSize = 12.sp)
+                    Text("Blocking Controls", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text("Schedule Blocking", modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        Switch(
+                            checked = rule.isScheduleEnabled,
+                            onCheckedChange = { onUpdate(rule.copy(isScheduleEnabled = it)) },
+                            modifier = Modifier.scale(0.8f)
+                        )
+                    }
+
+                    if (rule.isScheduleEnabled) {
+                        // Day Picker
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            val days = listOf("S", "M", "T", "W", "T", "F", "S")
+                            days.forEachIndexed { index, day ->
+                                val isSelected = (rule.daysToBlock and (1 shl index)) != 0
+                                Surface(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clickable {
+                                            val newMask = rule.daysToBlock xor (1 shl index)
+                                            onUpdate(rule.copy(daysToBlock = newMask))
+                                        },
+                                    shape = androidx.compose.foundation.shape.CircleShape,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Text(day, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                TimePickerDialog(context, { _, h, m -> 
-                                    onUpdate(rule.copy(startTimeMinutes = h * 60 + m))
-                                }, (rule.startTimeMinutes ?: 0) / 60, (rule.startTimeMinutes ?: 0) % 60, false).show()
-                            },
-                            modifier = Modifier.weight(1f)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("From: ${formatTime(rule.startTimeMinutes ?: 0)}")
-                        }
-                        OutlinedButton(
-                            onClick = {
-                                TimePickerDialog(context, { _, h, m -> 
-                                    onUpdate(rule.copy(endTimeMinutes = h * 60 + m))
-                                }, (rule.endTimeMinutes ?: 0) / 60, (rule.endTimeMinutes ?: 0) % 60, false).show()
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("To: ${formatTime(rule.endTimeMinutes ?: 0)}")
+                            OutlinedButton(
+                                onClick = {
+                                    TimePickerDialog(context, { _, h, m -> 
+                                        onUpdate(rule.copy(startTimeMinutes = h * 60 + m))
+                                    }, (rule.startTimeMinutes ?: 0) / 60, (rule.startTimeMinutes ?: 0) % 60, false).show()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                            ) {
+                                Text("From: ${formatTime(rule.startTimeMinutes ?: 0)}", style = MaterialTheme.typography.bodySmall)
+                            }
+                            OutlinedButton(
+                                onClick = {
+                                    TimePickerDialog(context, { _, h, m -> 
+                                        onUpdate(rule.copy(endTimeMinutes = h * 60 + m))
+                                    }, (rule.endTimeMinutes ?: 0) / 60, (rule.endTimeMinutes ?: 0) % 60, false).show()
+                                },
+                                modifier = Modifier.weight(1f),
+                                shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                            ) {
+                                Text("To: ${formatTime(rule.endTimeMinutes ?: 0)}", style = MaterialTheme.typography.bodySmall)
+                            }
                         }
                     }
-                }
 
                 Spacer(modifier = Modifier.height(16.dp))
                 
@@ -387,10 +419,9 @@ fun AppRuleItem(app: AppInfo, rule: Rule, onUpdate: (Rule) -> Unit) {
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("UID: ${app.uid}", fontSize = 12.sp, color = Color.Gray)
+                Text("UID: ${app.uid}", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
             }
         }
-        Divider(color = Color.LightGray.copy(alpha = 0.5f))
     }
 }
 
@@ -405,17 +436,27 @@ fun formatTime(minutes: Int): String {
 @Composable
 private fun NetAccessTheme(isDark: Boolean = false, content: @Composable () -> Unit) {
     val darkColorScheme = darkColorScheme(
-        primary = Color(0xFFD2A679),
-        secondary = Color(0xFF8E5A3C),
-        background = Color(0xFF2C1B12),
-        surface = Color(0xFF2C1B12)
+        primary = Color(0xFFA5C9FF),
+        onPrimary = Color(0xFF00325B),
+        primaryContainer = Color(0xFF00497E),
+        onPrimaryContainer = Color(0xFFD1E4FF),
+        secondary = Color(0xFFBCC7DB),
+        background = Color(0xFF1A1C1E),
+        surface = Color(0xFF1A1C1E),
+        surfaceVariant = Color(0xFF43474E),
+        onSurfaceVariant = Color(0xFFC3C7CF)
     )
 
     val lightColorScheme = lightColorScheme(
-        primary = Color(0xFF8E5A3C),
-        secondary = Color(0xFFD2A679),
-        background = Color(0xFFFFF2E4),
-        surface = Color(0xFFFFF2E4)
+        primary = Color(0xFF0061A4),
+        onPrimary = Color(0xFFFFFFFF),
+        primaryContainer = Color(0xFFD1E4FF),
+        onPrimaryContainer = Color(0xFF001D36),
+        secondary = Color(0xFF535F70),
+        background = Color(0xFFFDFCFF),
+        surface = Color(0xFFFDFCFF),
+        surfaceVariant = Color(0xFFDFE2EB),
+        onSurfaceVariant = Color(0xFF43474E)
     )
 
     val colors = if (isDark) darkColorScheme else lightColorScheme

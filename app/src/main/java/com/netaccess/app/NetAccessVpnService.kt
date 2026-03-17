@@ -56,7 +56,7 @@ class NetAccessVpnService : VpnService() {
             startForeground(
                 NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_VPN
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED
             )
         } else {
             startForeground(NOTIFICATION_ID, notification)

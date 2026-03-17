@@ -87,82 +87,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-class MainViewModel(private val repository: RuleRepository, private val packageManager: PackageManager) : ViewModel() {
-    val rules: Flow<List<Rule>> = repository.getAllRulesFlow()
-    
-    private val allApps = MutableStateFlow<List<AppInfo>>(emptyList())
-    val searchQuery = MutableStateFlow("")
-    val showOnlyBlocked = MutableStateFlow(false)
-    val showOnlySystem = MutableStateFlow(true)
-
-    // Reactive filtering pipeline
-    val filteredApps: StateFlow<List<AppInfo>> = combine(
-        allApps,
-        searchQuery,
-        showOnlyBlocked,
-        showOnlySystem,
-        repository.rulesMap
-    ) { apps, query, blockedOnly, systemOnly, rulesMap ->
-        apps.filter { app ->
-            val matchesSearch = query.isEmpty() || app.name.contains(query, ignoreCase = true) || 
-                             app.packageName.contains(query, ignoreCase = true)
-            val matchesSystem = systemOnly || !app.isSystem
-            
-            val rule = rulesMap[app.packageName]
-            val isBlocked = rule != null && (rule.wifiBlocked || rule.mobileBlocked || rule.isScheduleEnabled)
-            val matchesBlocked = !blockedOnly || isBlocked
-            
-            matchesSearch && matchesSystem && matchesBlocked
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    init {
-        loadApps()
-    }
-
-    private fun loadApps() {
-        viewModelScope.launch(kotlinx.coroutines.Dispatchers.Default) {
-            val apps = packageManager.getInstalledApplications(PackageManager.GET_META_DATA)
-                .sortedBy { packageManager.getApplicationLabel(it).toString() }
-            
-            allApps.value = apps.map { appInfo ->
-                AppInfo(
-                    packageName = appInfo.packageName,
-                    name = packageManager.getApplicationLabel(appInfo).toString(),
-                    uid = appInfo.uid,
-                    isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
-                )
-            }
-        }
-    }
-
-    fun onSearchQueryChange(newQuery: String) {
-        searchQuery.value = newQuery
-    }
-
-    fun toggleFilterBlocked() {
-        showOnlyBlocked.value = !showOnlyBlocked.value
-    }
-
-    fun toggleFilterSystem() {
-        showOnlySystem.value = !showOnlySystem.value
-    }
-
-    fun updateRule(rule: Rule) {
-        viewModelScope.launch {
-            repository.updateRule(rule)
-        }
-    }
-}
-
-// Memory-optimized: Don't store the Drawable in the data class
-data class AppInfo(
-    val packageName: String,
-    val name: String,
-    val uid: Int,
-    val isSystem: Boolean
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
@@ -175,7 +99,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                 if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-                    return MainViewModel(repository, context.packageManager) as T
+                    return MainViewModel(repository, context.packageManager, db.appMetadataDao()) as T
                 }
                 throw IllegalArgumentException("Unknown ViewModel class")
             }
@@ -384,7 +308,7 @@ fun MainScreen(isDarkMode: Boolean, onToggleTheme: () -> Unit) {
 }
 
 @Composable
-fun AppRuleItem(app: AppInfo, rule: Rule, onUpdate: (Rule) -> Unit) {
+fun AppRuleItem(app: AppMetadata, rule: Rule, onUpdate: (Rule) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     val context = LocalContext.current
     

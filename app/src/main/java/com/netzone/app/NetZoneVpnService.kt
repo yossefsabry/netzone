@@ -256,7 +256,7 @@ class NetZoneVpnService : VpnService() {
     }
 
     private suspend fun updateVpn(blockedPackages: List<String>) {
-        val blockedSet = blockedPackages.toSet()
+        val blockedSet = blockedPackages.toSet().minus(packageName)
         val customDns = preferenceManager.customDns.first()
 
         if (vpnInterface != null && blockedSet == lastBlockedPackages) {
@@ -288,13 +288,6 @@ class NetZoneVpnService : VpnService() {
                 builder.addDnsServer("8.8.8.8")
             }
 
-            // CRITICAL: Exclude ourselves to prevent recursive VPN routing
-            try {
-                builder.addDisallowedApplication(packageName)
-            } catch (e: Exception) {
-                Log.w(TAG, "Could not exclude self from VPN: ${e.message}")
-            }
-
             // Only add routes and allowed apps if we have apps to block.
             // If empty, the VPN interface is still established but no traffic is routed to it.
             // This maintains the VPN session and allows for a seamless handover when apps
@@ -307,7 +300,7 @@ class NetZoneVpnService : VpnService() {
                     try {
                         builder.addAllowedApplication(pkg)
                     } catch (e: Exception) {
-                        Log.e(TAG, "App $pkg not found, skipping")
+                        Log.e(TAG, "Failed to add allowed application $pkg", e)
                     }
                 }
             } else {

@@ -4,11 +4,9 @@
 
 # Keep Room entities
 -keep class com.netzone.app.Rule { *; }
--keep class com.netzone.app.AppSchedule { *; }
 
 # Keep DAOs
 -keep interface com.netzone.app.RuleDao { *; }
--keep interface com.netzone.app.AppScheduleDao { *; }
 
 # Keep Database
 -keep class com.netzone.app.AppDatabase { *; }

@@ -60,7 +60,6 @@ class NetZoneVpnService : VpnService() {
 
     companion object {
         private const val TAG = "NetZoneVPN"
-        const val ACTION_RELOAD = "com.netzone.app.RELOAD"
         const val ACTION_STOP = "com.netzone.app.STOP"
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "netzone_vpn_channel"
@@ -136,11 +135,15 @@ class NetZoneVpnService : VpnService() {
             stopVpn()
             return START_NOT_STICKY
         }
+        serviceScope.launch {
+            VpnScheduler.reloadVpn(this@NetZoneVpnService)
+        }
         debounceReload()
         return START_STICKY
     }
 
     private fun stopVpn() {
+        VpnScheduler.cancelAlarm(this)
         drainJob?.cancel()
         drainJob = null
         vpnInterface?.close()

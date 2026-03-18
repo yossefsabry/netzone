@@ -5,10 +5,9 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.SystemClock
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import androidx.core.content.ContextCompat
 
 class VpnScheduler : BroadcastReceiver() {
 
@@ -19,11 +18,13 @@ class VpnScheduler : BroadcastReceiver() {
     }
 
     companion object {
+        private const val TAG = "VpnScheduler"
+
         fun reloadVpn(context: Context) {
             // Avoid infinite loop when called from service's onStartCommand
             if (context !is NetZoneVpnService) {
                 val vpnIntent = Intent(context, NetZoneVpnService::class.java)
-                context.startService(vpnIntent)
+                ContextCompat.startForegroundService(context, vpnIntent)
             }
             
             scheduleNextAlarm(context)
@@ -51,8 +52,23 @@ class VpnScheduler : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            val nextTime = System.currentTimeMillis() + 60 * 1000
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, nextTime, pendingIntent)
+            // Reduce frequency to 15 minutes as per Task 1 fixes
+            val nextTime = SystemClock.elapsedRealtime() + 15 * 60 * 1000
+            
+            try {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    nextTime,
+                    pendingIntent
+                )
+            } catch (e: SecurityException) {
+                Log.e(TAG, "Exact alarm permission not granted, falling back to non-exact", e)
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    nextTime,
+                    pendingIntent
+                )
+            }
         }
     }
 }

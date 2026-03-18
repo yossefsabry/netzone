@@ -45,6 +45,7 @@ import coil.request.ImageRequest
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.painterResource
+import androidx.core.content.ContextCompat
 import java.util.*
 
 class MainActivity : ComponentActivity() {
@@ -127,7 +128,7 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
 
     val vpnLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == ComponentActivity.RESULT_OK) {
-            context.startService(Intent(context, NetZoneVpnService::class.java))
+            ContextCompat.startForegroundService(context, Intent(context, NetZoneVpnService::class.java))
         } else {
             isStarting = false
         }
@@ -179,14 +180,14 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
                         }
                         IconButton(onClick = {
                             if (isVpnRunning) {
-                                context.startService(Intent(context, NetZoneVpnService::class.java).apply { 
+                                ContextCompat.startForegroundService(context, Intent(context, NetZoneVpnService::class.java).apply { 
                                     action = NetZoneVpnService.ACTION_STOP 
                                 })
                             } else {
                                 isStarting = true
                                 val intent = VpnService.prepare(context)
                                 if (intent != null) vpnLauncher.launch(intent)
-                                else context.startService(Intent(context, NetZoneVpnService::class.java))
+                                else ContextCompat.startForegroundService(context, Intent(context, NetZoneVpnService::class.java))
                             }
                         }) {
                             Icon(

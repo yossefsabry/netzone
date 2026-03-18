@@ -31,6 +31,8 @@ class RuleRepository(private val dao: RuleDao) {
 
     fun getAllRulesFlow(): Flow<List<Rule>> = dao.getAllRules()
 
+    suspend fun getAllRules(): List<Rule> = dao.getAllRulesList()
+
     suspend fun updateRule(rule: Rule) {
         dao.insertRule(rule)
         // Flow will automatically update the map

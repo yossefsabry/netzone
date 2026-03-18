@@ -27,6 +27,9 @@ interface LogDao {
     @Query("SELECT * FROM logs ORDER BY timestamp DESC LIMIT 500")
     fun getAllLogs(): Flow<List<LogEntry>>
 
+    @Query("SELECT DISTINCT packageName FROM logs WHERE timestamp > :since")
+    fun getRecentPackageNames(since: Long): Flow<List<String>>
+
     @Insert
     suspend fun insert(log: LogEntry)
 

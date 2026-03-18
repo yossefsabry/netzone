@@ -1,36 +1,19 @@
 <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#00f2ff;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#4d00ff;stop-opacity:1" />
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#00E5FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2979FF;stop-opacity:1" />
     </linearGradient>
     <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feGaussianBlur stdDeviation="8" result="blur" />
       <feComposite in="SourceGraphic" in2="blur" operator="over" />
     </filter>
   </defs>
-  
-  <rect width="400" height="400" fill="#0a0a0f" />
-  
-  <!-- Outer Aura -->
-  <path d="M200 40 L340 100 L340 240 C340 320 200 360 200 360 C200 360 60 320 60 240 L60 100 Z" 
-        fill="none" stroke="#4d00ff" stroke-width="2" opacity="0.2" filter="url(#glow)" />
-  
-  <!-- Secondary Shield -->
-  <path d="M200 60 L320 115 L320 230 C320 300 200 335 200 335 C200 335 80 300 80 230 L80 115 Z" 
-        fill="none" stroke="#00f2ff" stroke-width="1.5" opacity="0.4" />
-  
-  <!-- Primary Shield -->
-  <path d="M200 80 L300 130 L300 220 C300 280 200 310 200 310 C200 310 100 280 100 220 L100 130 Z" 
-        fill="#05050f" stroke="url(#shieldGrad)" stroke-width="6" />
-  
-  <!-- Harmonic Filaments -->
-  <path d="M200 120 L270 155 L270 200 C270 240 200 260 200 260 C200 260 130 240 130 200 L130 155 Z" 
-        fill="none" stroke="#00f2ff" stroke-width="2" opacity="0.7" />
-  
-  <path d="M200 150 L240 170 L240 190 C240 215 200 230 200 230 C200 230 160 215 160 190 L160 170 Z" 
-        fill="none" stroke="#00f2ff" stroke-width="1" opacity="0.5" />
-        
-  <!-- Core Point -->
-  <circle cx="200" cy="190" r="4" fill="#00f2ff" filter="url(#glow)" />
+  <rect width="400" height="400" fill="#0A0A0F" rx="80" ry="80" />
+  <!-- Left Curve -->
+  <path d="M 140 100 C 130 180 135 280 200 340" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="24" stroke-linecap="round" filter="url(#glow)" />
+  <!-- Right Curve -->
+  <path d="M 260 100 C 270 180 265 280 200 340" 
+        fill="none" stroke="url(#shieldGrad)" stroke-width="24" stroke-linecap="round" filter="url(#glow)" />
 </svg>

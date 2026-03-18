@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/main_logo.png" width="160" alt="NetZone Logo" />
+  <img src="assets/logo.svg" width="160" alt="NetZone Logo" />
 </p>
 
 <h1 align="center">NetZone</h1>

@@ -19,6 +19,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -66,25 +67,39 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            val isDarkMode by preferenceManager.isDarkMode.collectAsStateWithLifecycle(initialValue = false)
+            val isDarkModePref by produceState<Boolean?>(initialValue = null) {
+                preferenceManager.isDarkMode.collect { value = it }
+            }
             val coroutineScope = rememberCoroutineScope()
+            val systemInDark = isSystemInDarkTheme()
+            
+            // If the preference is not loaded yet, use the system theme as a fallback, 
+            // but ensure we don't flash light if the user is in a dark environment.
+            val isDarkMode = isDarkModePref ?: systemInDark
 
             LaunchedEffect(isDarkMode) {
-                ThemeTransitionController.attachIfPending(this@MainActivity)
+                if (isDarkModePref != null) {
+                    ThemeTransitionController.attachIfPending(this@MainActivity)
+                }
             }
 
             NetZoneTheme(isDark = isDarkMode) {
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                    MainScreen(
-                        preferenceManager = preferenceManager,
-                        isDarkMode = isDarkMode,
-                        onToggleTheme = {
-                            coroutineScope.launch {
-                                ThemeTransitionController.prepareTransition(this@MainActivity, !isDarkMode)
-                                preferenceManager.setDarkMode(!isDarkMode)
+                Surface(
+                    modifier = Modifier.fillMaxSize(), 
+                    color = if (isDarkModePref == null) Color(0xFF1A1C1E) else MaterialTheme.colorScheme.background
+                ) {
+                    if (isDarkModePref != null) {
+                        MainScreen(
+                            preferenceManager = preferenceManager,
+                            isDarkMode = isDarkMode,
+                            onToggleTheme = {
+                                coroutineScope.launch {
+                                    ThemeTransitionController.prepareTransition(this@MainActivity, !isDarkMode)
+                                    preferenceManager.setDarkMode(!isDarkMode)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -156,11 +171,11 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Image(
-                                painter = painterResource(R.drawable.netzone_launcher_foreground),
-                                contentDescription = "NetZone icon",
-                                modifier = Modifier.size(50.dp)
-                            )
+                            // Image(
+                            //     painter = painterResource(R.drawable.netzone_launcher_foreground),
+                            //     contentDescription = "NetZone icon",
+                            //     modifier = Modifier.size(50.dp)
+                            // )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 "NZ",
@@ -324,6 +339,16 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                     placeholder = { Text("Search apps...") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(
+                                onClick = { viewModel.onSearchQueryChange("") },
+                                modifier = Modifier.padding(end = 8.dp)
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear search")
+                            }
+                        }
+                    },
                     singleLine = true,
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp),
                     colors = OutlinedTextFieldDefaults.colors(

@@ -11,6 +11,8 @@ import java.io.IOException
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
+enum class AppSortMode { NAME, UID, SMART }
+
 class PreferenceManager(context: Context) {
     private val dataStore = context.applicationContext.dataStore
 
@@ -20,7 +22,25 @@ class PreferenceManager(context: Context) {
         private val MANAGE_SYSTEM_APPS = booleanPreferencesKey("manage_system_apps")
         private val BLOCK_WHEN_SCREEN_OFF = booleanPreferencesKey("block_when_screen_off")
         private val CUSTOM_DNS = stringPreferencesKey("custom_dns")
+        private val APP_SORT_MODE = stringPreferencesKey("app_sort_mode")
     }
+
+    val appSortMode: Flow<AppSortMode> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            val modeName = preferences[APP_SORT_MODE] ?: AppSortMode.SMART.name
+            try {
+                AppSortMode.valueOf(modeName)
+            } catch (e: IllegalArgumentException) {
+                AppSortMode.SMART
+            }
+        }
 
     val isDarkMode: Flow<Boolean> = dataStore.data
         .catch { exception ->
@@ -110,5 +130,9 @@ class PreferenceManager(context: Context) {
         dataStore.edit { preferences ->
             preferences[CUSTOM_DNS] = dns
         }
+    }
+
+    suspend fun setAppSortMode(mode: AppSortMode) {
+        dataStore.edit { it[APP_SORT_MODE] = mode.name }
     }
 }

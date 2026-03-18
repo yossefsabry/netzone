@@ -131,10 +131,12 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val showOnlyBlocked by viewModel.showOnlyBlocked.collectAsStateWithLifecycle()
     val showOnlySystem by viewModel.showOnlySystem.collectAsStateWithLifecycle()
+    val sortMode by viewModel.sortMode.collectAsStateWithLifecycle(initialValue = AppSortMode.SMART)
     val isLockdown by preferenceManager.isLockdown.collectAsStateWithLifecycle(initialValue = false)
     val isVpnRunning by NetZoneVpnService.isRunning.collectAsStateWithLifecycle(initialValue = false)
     var isStarting by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showSortMenu by remember { mutableStateOf(false) }
     var showLegend by remember { mutableStateOf(false) }
     
     LaunchedEffect(isVpnRunning) {
@@ -219,6 +221,41 @@ fun MainScreen(preferenceManager: PreferenceManager, isDarkMode: Boolean, onTogg
                                 },
                                 modifier = Modifier.size(28.dp)
                             )
+                        }
+                        
+                        Box {
+                            IconButton(onClick = { showSortMenu = true }) {
+                                Icon(Icons.Default.Sort, contentDescription = "Sort Apps")
+                            }
+                            DropdownMenu(
+                                expanded = showSortMenu,
+                                onDismissRequest = { showSortMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Sort by Name") },
+                                    onClick = { 
+                                        viewModel.setSortMode(AppSortMode.NAME)
+                                        showSortMenu = false 
+                                    },
+                                    trailingIcon = { if (sortMode == AppSortMode.NAME) Icon(Icons.Default.Check, null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Sort by UID") },
+                                    onClick = { 
+                                        viewModel.setSortMode(AppSortMode.UID)
+                                        showSortMenu = false 
+                                    },
+                                    trailingIcon = { if (sortMode == AppSortMode.UID) Icon(Icons.Default.Check, null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Smart Sort (Recommended)") },
+                                    onClick = { 
+                                        viewModel.setSortMode(AppSortMode.SMART)
+                                        showSortMenu = false 
+                                    },
+                                    trailingIcon = { if (sortMode == AppSortMode.SMART) Icon(Icons.Default.Check, null) }
+                                )
+                            }
                         }
                         
                         Box {

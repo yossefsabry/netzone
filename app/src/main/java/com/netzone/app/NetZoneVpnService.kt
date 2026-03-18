@@ -39,6 +39,9 @@ class NetZoneVpnService : VpnService() {
     // Debounce reload to coalesce rapid rule/network changes
     private var reloadJob: Job? = null
 
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+    private var screenReceiver: android.content.BroadcastReceiver? = null
+
     companion object {
         private const val TAG = "NetZoneVPN"
         const val ACTION_RELOAD = "com.netzone.app.RELOAD"
@@ -91,13 +94,13 @@ class NetZoneVpnService : VpnService() {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
         }
-        val receiver = object : android.content.BroadcastReceiver() {
+        screenReceiver = object : android.content.BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 isScreenOn = intent?.action == Intent.ACTION_SCREEN_ON
                 debounceReload()
             }
         }
-        registerReceiver(receiver, filter)
+        registerReceiver(screenReceiver, filter)
     }
 
     private fun startSpeedMonitor() {
@@ -156,7 +159,7 @@ class NetZoneVpnService : VpnService() {
 
     private fun observeNetwork() {
         val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 updateNetworkState(cm.getNetworkCapabilities(network))
                 debounceReload()
@@ -165,7 +168,8 @@ class NetZoneVpnService : VpnService() {
                 updateNetworkState(caps)
                 debounceReload()
             }
-        })
+        }
+        cm.registerDefaultNetworkCallback(networkCallback!!)
     }
 
     /**
@@ -268,54 +272,56 @@ class NetZoneVpnService : VpnService() {
         val oldDrainJob = drainJob
 
         try {
-            val builder = Builder()
-                .setSession("NetZone")
-                .addAddress("10.0.0.2", 32)
-                .addAddress("fd00:1::2", 128)
-                .setMtu(1500)
+            val newInterface = withContext(Dispatchers.IO) {
+                val builder = Builder()
+                    .setSession("NetZone")
+                    .addAddress("10.0.0.2", 32)
+                    .addAddress("fd00:1::2", 128)
+                    .setMtu(1500)
 
-            // Apply custom DNS
-            try {
-                if (customDns.contains(":")) {
-                    builder.addDnsServer(customDns)
-                } else {
-                    builder.addDnsServer(customDns)
-                    // Add secondary common DNS if only one is provided
-                    if (customDns == "8.8.8.8") builder.addDnsServer("8.8.4.4")
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Invalid DNS: $customDns", e)
-                builder.addDnsServer("8.8.8.8")
-            }
-
-            // Only add routes and allowed apps if we have apps to block.
-            // If empty, the VPN interface is still established but no traffic is routed to it.
-            // This maintains the VPN session and allows for a seamless handover when apps
-            // are subsequently blocked/unblocked.
-            if (blockedSet.isNotEmpty()) {
-                builder.addRoute("0.0.0.0", 0)
-                builder.addRoute("::", 0)
-
-                for (pkg in blockedSet) {
-                    try {
-                        builder.addAllowedApplication(pkg)
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Failed to add allowed application $pkg", e)
+                // Apply custom DNS
+                try {
+                    if (customDns.contains(":")) {
+                        builder.addDnsServer(customDns)
+                    } else {
+                        builder.addDnsServer(customDns)
+                        // Add secondary common DNS if only one is provided
+                        if (customDns == "8.8.8.8") builder.addDnsServer("8.8.4.4")
                     }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Invalid DNS: $customDns", e)
+                    builder.addDnsServer("8.8.8.8")
                 }
-            } else {
-                Log.i(TAG, "Establishing VPN with 0 blocked apps (transparent mode)")
+
+                // Only add routes and allowed apps if we have apps to block.
+                // If empty, the VPN interface is still established but no traffic is routed to it.
+                // This maintains the VPN session and allows for a seamless handover when apps
+                // are subsequently blocked/unblocked.
+                if (blockedSet.isNotEmpty()) {
+                    builder.addRoute("0.0.0.0", 0)
+                    builder.addRoute("::", 0)
+
+                    for (pkg in blockedSet) {
+                        try {
+                            builder.addAllowedApplication(pkg)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to add allowed application $pkg", e)
+                        }
+                    }
+                } else {
+                    Log.i(TAG, "Establishing VPN with 0 blocked apps (transparent mode)")
+                }
+
+                // Add configure intent so tapping notification opens the app
+                val configureIntent = Intent(this@NetZoneVpnService, MainActivity::class.java)
+                val pendingIntent = PendingIntent.getActivity(
+                    this@NetZoneVpnService, 0, configureIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                builder.setConfigureIntent(pendingIntent)
+
+                builder.establish()
             }
-
-            // Add configure intent so tapping notification opens the app
-            val configureIntent = Intent(this, MainActivity::class.java)
-            val pendingIntent = PendingIntent.getActivity(
-                this, 0, configureIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            builder.setConfigureIntent(pendingIntent)
-
-            val newInterface = builder.establish()
 
             if (newInterface != null) {
                 // Handover: Update references and start new drain job
@@ -456,6 +462,25 @@ class NetZoneVpnService : VpnService() {
     override fun onDestroy() {
         Log.i(TAG, "Service destroyed")
         _isRunning.value = false
+        
+        // Unregister resources
+        try {
+            networkCallback?.let {
+                val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                cm.unregisterNetworkCallback(it)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unregister network callback", e)
+        }
+        
+        try {
+            screenReceiver?.let {
+                unregisterReceiver(it)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to unregister screen receiver", e)
+        }
+
         drainJob?.cancel()
         vpnInterface?.close()
         serviceScope.cancel()

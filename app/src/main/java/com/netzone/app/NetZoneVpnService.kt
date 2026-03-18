@@ -201,7 +201,6 @@ class NetZoneVpnService : VpnService() {
 
         // Reuse cached usageTracker instead of creating a new one every time
         val allUsage = usageTracker.getAllTodayUsageMinutes()
-        val blockedPackages = mutableListOf<String>()
         val blockedAppDetails = mutableListOf<Rule>()
 
         for (rule in rules) {
@@ -233,15 +232,20 @@ class NetZoneVpnService : VpnService() {
                 }
             }
 
-            if (shouldBlock) {
-                blockedPackages.add(rule.packageName)
+            if (shouldBlock && rule.packageName != packageName) {
                 blockedAppDetails.add(rule)
             }
         }
 
-        // Log blocked apps for the Access Log screen (only when they change)
-        val blockedSet = blockedPackages.toSet()
-        if (blockedSet != lastBlockedPackages && blockedSet.isNotEmpty()) {
+        val blockedSet = blockedAppDetails.map { it.packageName }.toSet()
+        val previousBlockedSet = lastBlockedPackages
+
+        val didUpdate = withContext(Dispatchers.Main) {
+            updateVpn(blockedSet)
+        }
+
+        // Log blocked apps for the Access Log screen (only when they change and are not empty)
+        if (didUpdate && blockedSet != previousBlockedSet && blockedSet.isNotEmpty()) {
             serviceScope.launch(Dispatchers.IO) {
                 blockedAppDetails.forEach { rule ->
                     logDao.insert(LogEntry(
@@ -253,18 +257,13 @@ class NetZoneVpnService : VpnService() {
                 }
             }
         }
-
-        withContext(Dispatchers.Main) {
-            updateVpn(blockedPackages)
-        }
     }
 
-    private suspend fun updateVpn(blockedPackages: List<String>) {
-        val blockedSet = blockedPackages.toSet().minus(packageName)
+    private suspend fun updateVpn(blockedSet: Set<String>): Boolean {
         val customDns = preferenceManager.customDns.first()
 
         if (vpnInterface != null && blockedSet == lastBlockedPackages) {
-            return
+            return false
         }
 
         // Delay closing old interface and cancelling drainJob for atomic handover
@@ -337,21 +336,24 @@ class NetZoneVpnService : VpnService() {
                 oldDrainJob?.cancel()
                 oldInterface?.close()
 
-                val notificationText = if (blockedSet.isEmpty()) {
+                val count = blockedSet.size
+                val notificationText = if (count == 0) {
                     "Firewall active: 0 apps blocked"
                 } else {
-                    "Firewall active: ${blockedSet.size} apps blocked"
+                    "Firewall active: $count app${if (count == 1) "" else "s"} blocked"
                 }
                 updateNotification(notificationText)
-                Log.i(TAG, "VPN established (atomic), blocking ${blockedSet.size} apps")
+                Log.i(TAG, "VPN established (atomic), blocking $count apps")
+                return true
             } else {
                 Log.e(TAG, "VPN establish() returned null — user may not have granted permission")
                 updateNotification("Firewall: waiting for VPN permission")
-                // Keep the old one if it still exists
+                return false
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start VPN", e)
             updateNotification("Firewall Error: ${e.message}")
+            return false
         }
     }
 

@@ -1,88 +1,148 @@
 package com.netzone.app
 
+import com.netzone.app.ui.apps.buildAppRows
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class SortLogicTest {
 
     @Test
-    fun testSmartSortPriorities() {
-        // Sample data
+    fun smart_sort_prioritizes_custom_rules_then_recent_then_name() {
         val apps = listOf(
-            AppMetadata("com.a", "App A", 1, false),
-            AppMetadata("com.b", "App B", 2, false),
-            AppMetadata("com.c", "App C", 3, false),
-            AppMetadata("com.d", "App D", 4, false),
-            AppMetadata("com.e", "App E", 5, false)
+            AppMetadata("com.alpha", "Alpha", 10, false),
+            AppMetadata("com.beta", "Beta", 11, false),
+            AppMetadata("com.gamma", "Gamma", 12, false),
+            AppMetadata("com.delta", "Delta", 13, false)
         )
 
-        // Rules: App B and App D are blocked
         val rulesMap = mapOf(
-            "com.b" to Rule("com.b", "App B", 2, wifiBlocked = true),
-            "com.d" to Rule("com.d", "App D", 4, mobileBlocked = true)
+            "com.gamma" to Rule("com.gamma", "Gamma", 12, wifiBlocked = true),
+            "com.delta" to Rule("com.delta", "Delta", 13, isScheduleEnabled = true)
         )
 
-        // Recent: App C and App E are recent. App B (blocked) is also recent.
-        val recentPackages = listOf("com.c", "com.e", "com.b")
+        val rows = buildAppRows(
+            apps = apps,
+            rules = rulesMap,
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = listOf("com.beta", "com.gamma")
+        )
 
-        // Priorities: Blocked > Recently Active > Alphabetical
-        // Expected order:
-        // 1. App B (Blocked, Recent)
-        // 2. App D (Blocked, Not Recent)
-        // 3. App C (Not Blocked, Recent, 'C' < 'E')
-        // 4. App E (Not Blocked, Recent, 'E' > 'C')
-        // 5. App A (Not Blocked, Not Recent)
-
-        val sorted = MainViewModel.sortSmart(apps, rulesMap, recentPackages)
-
-        assertEquals("com.b", sorted[0].packageName)
-        assertEquals("com.d", sorted[1].packageName)
-        assertEquals("com.c", sorted[2].packageName)
-        assertEquals("com.e", sorted[3].packageName)
-        assertEquals("com.a", sorted[4].packageName)
+        assertEquals(
+            listOf("com.gamma", "com.delta", "com.beta", "com.alpha"),
+            rows.map { it.packageName }
+        )
     }
 
     @Test
-    fun testSmartSortBlockedBySchedule() {
+    fun smart_sort_treats_non_network_restrictions_as_custom() {
         val apps = listOf(
-            AppMetadata("com.a", "App A", 1, false),
-            AppMetadata("com.b", "App B", 2, false)
+            AppMetadata("com.alpha", "Alpha", 10, false),
+            AppMetadata("com.beta", "Beta", 11, false),
+            AppMetadata("com.gamma", "Gamma", 12, false)
         )
-        // App B is blocked by schedule
+
         val rulesMap = mapOf(
-            "com.b" to Rule("com.b", "App B", 2, isScheduleEnabled = true)
+            "com.beta" to Rule("com.beta", "Beta", 11, dailyLimitMinutes = 15),
+            "com.gamma" to Rule("com.gamma", "Gamma", 12, isScheduleEnabled = true)
         )
-        val recentPackages = emptyList<String>()
 
-        val sorted = MainViewModel.sortSmart(apps, rulesMap, recentPackages)
+        val rows = buildAppRows(
+            apps = apps,
+            rules = rulesMap,
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = emptyList()
+        )
 
-        assertEquals("com.b", sorted[0].packageName)
-        assertEquals("com.a", sorted[1].packageName)
+        assertEquals(
+            listOf("com.beta", "com.gamma", "com.alpha"),
+            rows.map { it.packageName }
+        )
     }
 
     @Test
-    fun testSmartSortEmptyList() {
-        val apps = emptyList<AppMetadata>()
-        val rulesMap = emptyMap<String, Rule>()
-        val recentPackages = emptyList<String>()
+    fun smart_sort_preserves_recent_packages_order() {
+        val rows = buildAppRows(
+            apps = listOf(
+                AppMetadata("com.alpha", "Alpha", 10, false),
+                AppMetadata("com.beta", "Beta", 11, false),
+                AppMetadata("com.gamma", "Gamma", 12, false)
+            ),
+            rules = emptyMap(),
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = listOf("com.gamma", "com.alpha")
+        )
 
-        val sorted = MainViewModel.sortSmart(apps, rulesMap, recentPackages)
-        assert(sorted.isEmpty())
+        assertEquals(
+            listOf("com.gamma", "com.alpha", "com.beta"),
+            rows.map { it.packageName }
+        )
     }
 
     @Test
-    fun testSmartSortNoRules() {
-        val apps = listOf(
-            AppMetadata("com.b", "App B", 2, false),
-            AppMetadata("com.a", "App A", 1, false)
+    fun smart_sort_uses_first_occurrence_when_recent_packages_contains_duplicates() {
+        val rows = buildAppRows(
+            apps = listOf(
+                AppMetadata("com.alpha", "Alpha", 10, false),
+                AppMetadata("com.beta", "Beta", 11, false),
+                AppMetadata("com.gamma", "Gamma", 12, false)
+            ),
+            rules = emptyMap(),
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = listOf("com.alpha", "com.gamma", "com.alpha")
         )
-        val rulesMap = emptyMap<String, Rule>()
-        val recentPackages = emptyList<String>()
 
-        val sorted = MainViewModel.sortSmart(apps, rulesMap, recentPackages)
+        assertEquals(
+            listOf("com.alpha", "com.gamma", "com.beta"),
+            rows.map { it.packageName }
+        )
+    }
 
-        // Should fall back to alphabetical
-        assertEquals("com.a", sorted[0].packageName)
-        assertEquals("com.b", sorted[1].packageName)
+    @Test
+    fun smart_sort_uses_package_name_as_final_tiebreaker_for_same_name() {
+        val rows = buildAppRows(
+            apps = listOf(
+                AppMetadata("com.zulu.alpha", "Alpha", 20, false),
+                AppMetadata("com.alpha.alpha", "Alpha", 10, false),
+                AppMetadata("com.beta.beta", "Beta", 30, false)
+            ),
+            rules = emptyMap(),
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = emptyList()
+        )
+
+        assertEquals(
+            listOf("com.alpha.alpha", "com.zulu.alpha", "com.beta.beta"),
+            rows.map { it.packageName }
+        )
+    }
+
+    @Test
+    fun smart_sort_returns_empty_list_for_empty_input() {
+        val rows = buildAppRows(
+            apps = emptyList(),
+            rules = emptyMap(),
+            searchQuery = "",
+            includeSystemApps = true,
+            blockedOnly = false,
+            sortMode = AppSortMode.SMART,
+            recentPackages = emptyList()
+        )
+
+        assertEquals(emptyList<String>(), rows.map { it.packageName })
     }
 }

@@ -104,13 +104,7 @@ class HomeViewModel @Inject constructor(
 
     fun toggleVpn(start: Boolean) {
         viewModelScope.launch {
-            val intent = Intent(context, NetZoneVpnService::class.java)
-            if (start) {
-                context.startForegroundService(intent)
-            } else {
-                intent.action = NetZoneVpnService.ACTION_STOP
-                context.startService(intent)
-            }
+            context.startVpnServiceCompat(start)
         }
     }
 

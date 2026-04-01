@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# NetAccess Kotlin Android App - Build Release APK Script
+# NetZone Kotlin Android App - Build Release APK Script
 # This script builds the optimized release APK
 
 set -e  # Exit on error
@@ -13,7 +13,7 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  NetAccess - Release Build Script${NC}"
+echo -e "${BLUE}  NetZone - Release Build Script${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 

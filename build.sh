@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# NetAccess Kotlin Android App - Build Script
+# NetZone Kotlin Android App - Build Script
 # This script builds the debug APK and displays the output path
 
 set -e  # Exit on error
@@ -12,7 +12,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${BLUE}========================================${NC}"
-echo -e "${BLUE}  NetAccess Kotlin Android - Build Script${NC}"
+echo -e "${BLUE}  NetZone Kotlin Android - Build Script${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -58,7 +58,7 @@ if [ $? -eq 0 ]; then
         echo "adb install -r $APK_PATH"
         echo ""
         echo -e "${BLUE}To launch app:${NC}"
-        echo "adb shell am start -n com.netaccess.app/.MainActivity"
+        echo "adb shell am start -n com.netzone.app/.MainActivity"
     else
         echo -e "${YELLOW}Warning: APK file not found at expected location${NC}"
     fi

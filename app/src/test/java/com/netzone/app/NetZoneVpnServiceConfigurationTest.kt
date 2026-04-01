@@ -9,23 +9,23 @@ import org.junit.Test
 class NetZoneVpnServiceConfigurationTest {
 
     @Test
-    fun vpnServiceDeclaresSystemExemptedForegroundTypeInManifest() {
+    fun vpnServiceDeclaresSpecialUseForegroundTypeInManifest() {
         val manifest = readProjectFile("src", "main", "AndroidManifest.xml")
 
         assertTrue(
-            "VPN service should declare android:foregroundServiceType=systemExempted",
+            "VPN service should declare android:foregroundServiceType=specialUse",
             manifest.contains("android:name=\".NetZoneVpnService\"") &&
-                manifest.contains("android:foregroundServiceType=\"systemExempted\"")
+                manifest.contains("android:foregroundServiceType=\"specialUse\"")
         )
     }
 
     @Test
-    fun vpnServiceUsesExplicitSystemExemptedForegroundTypeAtRuntime() {
+    fun vpnServiceUsesExplicitSpecialUseForegroundTypeAtRuntime() {
         val source = readProjectFile("src", "main", "java", "com", "netzone", "app", "NetZoneVpnService.kt")
 
         assertTrue(
-            "VPN service should pass FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED when starting in foreground",
-            source.contains("ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED")
+            "VPN service should pass FOREGROUND_SERVICE_TYPE_SPECIAL_USE when starting in foreground",
+            source.contains("ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE")
         )
     }
 

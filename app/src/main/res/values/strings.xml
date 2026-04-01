@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">NetZone</string>
+    <string name="fgs_vpn_subtype">vpn_firewall_traffic_filtering</string>
 </resources>

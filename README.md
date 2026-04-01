@@ -68,6 +68,25 @@ To generate a release-ready APK, ensure that your signing configurations are cor
 ./build-release.sh
 ```
 
+## F-Droid Readiness
+
+NetZone is designed to be buildable entirely from source with the Gradle wrapper.
+
+- Package id: `com.netzone.app`
+- License: MIT
+- No analytics/ads SDK dependency is required for core app behavior.
+- Primary release verification commands:
+
+```bash
+./gradlew :app:testDebugUnitTest
+./gradlew :app:lintRelease
+./gradlew :app:assembleRelease
+```
+
+Detailed release and submission checklist: `FDROID_READINESS_PLAN.md`.
+
+Permission rationale for reviewers: `PERMISSIONS_RATIONALE.md`.
+
 ## System Architecture
 
 NetZone functions by initializing a local VPN interface that serves as a controlled gateway for device traffic. When an application is subjected to a blocking rule, the service dynamically reconfigures the routing table to direct that application's packets into the virtual tunnel. Rather than forwarding this traffic to a remote gateway, the service silently discards the packets (the "drain" process), effectively neutralizing the application's network capabilities without disrupting the connectivity of other system components.

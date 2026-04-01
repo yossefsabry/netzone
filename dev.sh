@@ -14,7 +14,7 @@ PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 export GRADLE_USER_HOME="$PROJECT_DIR/.gradle-user-home"
 
 # Android package/activity (used for uninstall + launch)
-PACKAGE_NAME="com.netaccess.app"
+PACKAGE_NAME="com.netzone.app"
 LAUNCH_COMPONENT="$PACKAGE_NAME/.MainActivity"
 
 # Flags

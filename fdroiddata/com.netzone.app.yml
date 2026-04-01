@@ -1,0 +1,38 @@
+Categories:
+  - Internet
+  - Security
+License: MIT
+WebSite: https://github.com/yossefsabry/NetAcess
+SourceCode: https://github.com/yossefsabry/NetAcess
+IssueTracker: https://github.com/yossefsabry/NetAcess/issues
+Changelog: https://github.com/yossefsabry/NetAcess/releases
+
+AutoName: NetZone
+Summary: Non-root firewall with per-app network controls
+Description: |-
+  NetZone is a non-root Android firewall that uses Android VpnService to
+  control internet access per app.
+
+  Features include:
+  . Wi-Fi and mobile-data app blocking rules
+  . Daily usage quota enforcement
+  . Scheduled blocking windows
+  . Local-only processing with no remote filtering server
+
+  Permissions such as Usage Access, Query All Packages, and exact alarms are
+  used only to power firewall rules and scheduling behavior.
+
+RepoType: git
+Repo: https://github.com/yossefsabry/NetAcess.git
+
+Builds:
+  - versionName: 1.1.0
+    versionCode: 2
+    commit: v1.1.0
+    gradle:
+      - yes
+
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags ^v[0-9].*$
+CurrentVersion: 1.1.0
+CurrentVersionCode: 2

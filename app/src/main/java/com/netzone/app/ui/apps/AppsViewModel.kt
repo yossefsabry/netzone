@@ -1,7 +1,6 @@
 package com.netzone.app.ui.apps
 
 import android.content.Context
-import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.netzone.app.AppDiscoveryService
@@ -13,6 +12,7 @@ import com.netzone.app.NetZoneVpnService
 import com.netzone.app.PreferenceManager
 import com.netzone.app.Rule
 import com.netzone.app.RuleRepository
+import com.netzone.app.startVpnServiceCompat
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -84,15 +84,7 @@ class AppsViewModel private constructor(
             setDarkMode = preferenceManager::setDarkMode,
             recentPackages = logDao.getRecentPackageNames(System.currentTimeMillis() - 24 * 60 * 60 * 1000),
             vpnRunning = NetZoneVpnService.isRunning,
-            toggleVpnAction = { start ->
-                val intent = Intent(context, NetZoneVpnService::class.java)
-                if (start) {
-                    context.startForegroundService(intent)
-                } else {
-                    intent.action = NetZoneVpnService.ACTION_STOP
-                    context.startService(intent)
-                }
-            },
+            toggleVpnAction = { start -> context.startVpnServiceCompat(start) },
             appDiscoveryState = appDiscoveryService.state,
             refreshInstalledAppsAction = appDiscoveryService::syncInstalledApps,
             updateRuleAction = repository::updateRule

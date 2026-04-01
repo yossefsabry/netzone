@@ -42,11 +42,13 @@ class NetZoneVpnService : VpnService() {
     private var isMobile = false
     private var isScreenOn = true
     private var lastBlockedPackages: Set<String>? = null
+    private var lastCustomDns: String? = null
 
     // Cached instances to avoid allocation churn
     private lateinit var repository: RuleRepository
     private lateinit var usageTracker: UsageTracker
     private lateinit var preferenceManager: PreferenceManager
+    private lateinit var appMetadataDao: AppMetadataDao
     private lateinit var logDao: LogDao
 
     // Drain job reads/discards packets from tunnel fd to prevent buffer overflow
@@ -79,6 +81,7 @@ class NetZoneVpnService : VpnService() {
         repository = RuleRepository.getInstance(db.ruleDao())
         usageTracker = UsageTracker(this)
         preferenceManager = PreferenceManager(this)
+        appMetadataDao = db.appMetadataDao()
         logDao = db.logDao()
 
         createNotificationChannel()
@@ -149,6 +152,7 @@ class NetZoneVpnService : VpnService() {
         vpnInterface?.close()
         vpnInterface = null
         lastBlockedPackages = null
+        lastCustomDns = null
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             stopForeground(STOP_FOREGROUND_REMOVE)
@@ -210,24 +214,26 @@ class NetZoneVpnService : VpnService() {
     }
 
     private suspend fun reloadRules() {
-        val rules = repository.rulesMap.value.values
         val isLockdown = preferenceManager.isLockdown.first()
         val blockScreenOff = preferenceManager.blockWhenScreenOff.first()
         val now = Calendar.getInstance()
-        val currentDayOfWeek = now.get(Calendar.DAY_OF_WEEK) // 1=Sun, 2=Mon...
-        val dayMask = 1 shl (currentDayOfWeek - 1)
-        val currentMinutes = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
+        val shouldBlockAllApps = isLockdown || (blockScreenOff && !isScreenOn)
 
         // Reuse cached usageTracker instead of creating a new one every time
         val allUsage = usageTracker.getAllTodayUsageMinutes()
         val blockedAppDetails = mutableListOf<Rule>()
 
-        for (rule in rules) {
-            var shouldBlock = false
+        if (shouldBlockAllApps) {
+            appMetadataDao.getAllAppsList()
+                .filterNot { it.packageName == packageName }
+                .forEach { app ->
+                    blockedAppDetails += repository.getRuleFromCache(app.packageName)
+                        ?: Rule(app.packageName, app.name, app.uid)
+                }
+        } else {
+            for (rule in repository.rulesMap.value.values) {
+                var shouldBlock = false
 
-            if (isLockdown || (blockScreenOff && !isScreenOn)) {
-                shouldBlock = true
-            } else {
                 if (!rule.isEnabled) continue
 
                 // Per-network blocking
@@ -235,11 +241,8 @@ class NetZoneVpnService : VpnService() {
                 if (isMobile && rule.mobileBlocked) shouldBlock = true
 
                 // Schedule blocking
-                if (!shouldBlock && rule.isScheduleEnabled && rule.startTimeMinutes != null && rule.endTimeMinutes != null) {
-                    val isDaySelected = (rule.daysToBlock and dayMask) != 0
-                    if (isDaySelected && isCurrentTimeInRange(currentMinutes, rule.startTimeMinutes, rule.endTimeMinutes)) {
-                        shouldBlock = true
-                    }
+                if (!shouldBlock && rule.isScheduleBlockingNow(now)) {
+                    shouldBlock = true
                 }
 
                 // Daily usage limit
@@ -249,10 +252,10 @@ class NetZoneVpnService : VpnService() {
                         shouldBlock = true
                     }
                 }
-            }
 
-            if (shouldBlock && rule.packageName != packageName) {
-                blockedAppDetails.add(rule)
+                if (shouldBlock && rule.packageName != packageName) {
+                    blockedAppDetails.add(rule)
+                }
             }
         }
 
@@ -281,7 +284,7 @@ class NetZoneVpnService : VpnService() {
     private suspend fun updateVpn(blockedSet: Set<String>): Boolean {
         val customDns = preferenceManager.customDns.first()
 
-        if (vpnInterface != null && blockedSet == lastBlockedPackages) {
+        if (vpnInterface != null && blockedSet == lastBlockedPackages && customDns == lastCustomDns) {
             return false
         }
 
@@ -345,6 +348,7 @@ class NetZoneVpnService : VpnService() {
                 // Handover: Update references and start new drain job
                 vpnInterface = newInterface
                 lastBlockedPackages = blockedSet
+                lastCustomDns = customDns
                 
                 // Start new drain job first
                 drainJob = serviceScope.launch {
@@ -407,15 +411,17 @@ class NetZoneVpnService : VpnService() {
 
     private fun logConnection(packet: ParsedPacket) {
         serviceScope.launch(Dispatchers.IO) {
-            // Heuristic: log which app is likely sending to the sinkhole.
-            // Only consider apps that are enabled and currently targeted for blocking.
             val blocked = lastBlockedPackages ?: emptySet()
             val rules = repository.rulesMap.value.values
-            val possibleApp = rules.firstOrNull { it.isEnabled && it.packageName in blocked }
+            val possibleApp = if (blocked.size == 1) {
+                rules.firstOrNull { it.isEnabled && it.packageName in blocked }
+            } else {
+                null
+            }
             
             logDao.insert(LogEntry(
                 packageName = possibleApp?.packageName ?: "Unknown",
-                appName = possibleApp?.appName ?: "Network Traffic",
+                appName = possibleApp?.appName ?: "Blocked Traffic",
                 uid = possibleApp?.uid ?: 0,
                 protocol = when(packet.protocol) {
                     6 -> "TCP"
@@ -432,10 +438,6 @@ class NetZoneVpnService : VpnService() {
         }
     }
 
-    private fun isCurrentTimeInRange(now: Int, start: Int, end: Int): Boolean {
-        return if (start <= end) now in start..end else now >= start || now <= end
-    }
-
     /**
      * Called by Android when the user revokes VPN permission.
      * Gracefully tears down the VPN without crashing.
@@ -446,6 +448,7 @@ class NetZoneVpnService : VpnService() {
         vpnInterface?.close()
         vpnInterface = null
         lastBlockedPackages = null
+        lastCustomDns = null
         serviceScope.cancel()
         stopSelf()
         super.onRevoke()
@@ -507,6 +510,8 @@ class NetZoneVpnService : VpnService() {
 
         drainJob?.cancel()
         vpnInterface?.close()
+        lastBlockedPackages = null
+        lastCustomDns = null
         serviceScope.cancel()
         super.onDestroy()
     }

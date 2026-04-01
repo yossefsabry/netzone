@@ -8,12 +8,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
+import javax.inject.Inject
+import javax.inject.Singleton
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 enum class AppSortMode { NAME, UID, SMART }
 
-class PreferenceManager(context: Context) {
+@Singleton
+class PreferenceManager @Inject constructor(private val context: Context) {
     private val dataStore = context.applicationContext.dataStore
 
     companion object {
@@ -23,6 +26,7 @@ class PreferenceManager(context: Context) {
         private val BLOCK_WHEN_SCREEN_OFF = booleanPreferencesKey("block_when_screen_off")
         private val CUSTOM_DNS = stringPreferencesKey("custom_dns")
         private val APP_SORT_MODE = stringPreferencesKey("app_sort_mode")
+        private val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
     }
 
     val appSortMode: Flow<AppSortMode> = dataStore.data
@@ -102,6 +106,18 @@ class PreferenceManager(context: Context) {
             preferences[CUSTOM_DNS] ?: "8.8.8.8"
         }
 
+    val hasCompletedOnboarding: Flow<Boolean> = dataStore.data
+        .catch { exception ->
+            if (exception is IOException) {
+                emit(emptyPreferences())
+            } else {
+                throw exception
+            }
+        }
+        .map { preferences ->
+            preferences[HAS_COMPLETED_ONBOARDING] ?: false
+        }
+
     suspend fun setDarkMode(isDark: Boolean) {
         dataStore.edit { preferences ->
             preferences[IS_DARK_MODE] = isDark
@@ -134,5 +150,9 @@ class PreferenceManager(context: Context) {
 
     suspend fun setAppSortMode(mode: AppSortMode) {
         dataStore.edit { it[APP_SORT_MODE] = mode.name }
+    }
+
+    suspend fun setHasCompletedOnboarding(completed: Boolean) {
+        dataStore.edit { it[HAS_COMPLETED_ONBOARDING] = completed }
     }
 }

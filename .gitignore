@@ -46,3 +46,7 @@ data_map
 .gradle
 
 docs
+
+.worktrees/
+
+.worktrees/

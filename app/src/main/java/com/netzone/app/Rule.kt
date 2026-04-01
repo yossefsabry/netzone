@@ -22,6 +22,40 @@ data class Rule(
     val blockedIPs: String = "",
     val blockedPorts: String = ""
 ) {
+    fun isBlocked(now: java.util.Calendar = java.util.Calendar.getInstance()): Boolean {
+        return (isEnabled && (wifiBlocked ||
+            mobileBlocked)) ||
+            isScheduleBlockingNow(now)
+    }
+
+    fun isScheduleBlockingNow(now: java.util.Calendar = java.util.Calendar.getInstance()): Boolean {
+        if (!isEnabled || !isScheduleEnabled || daysToBlock == 0) return false
+
+        val start = startTimeMinutes ?: return false
+        val end = endTimeMinutes ?: return false
+        val currentMinutes = now.get(java.util.Calendar.HOUR_OF_DAY) * 60 + now.get(java.util.Calendar.MINUTE)
+        val dayMask = 1 shl (now.get(java.util.Calendar.DAY_OF_WEEK) - 1)
+
+        return if (start <= end) {
+            (daysToBlock and dayMask) != 0 && currentMinutes in start..end
+        } else {
+            val previousDay = (now.clone() as java.util.Calendar).apply {
+                add(java.util.Calendar.DAY_OF_YEAR, -1)
+            }
+            val previousDayMask = 1 shl (previousDay.get(java.util.Calendar.DAY_OF_WEEK) - 1)
+
+            ((daysToBlock and dayMask) != 0 && currentMinutes >= start) ||
+                ((daysToBlock and previousDayMask) != 0 && currentMinutes <= end)
+        }
+    }
+
+    fun hasCustomRestriction(): Boolean {
+        return wifiBlocked ||
+            mobileBlocked ||
+            isScheduleEnabled ||
+            dailyLimitMinutes > 0
+    }
+
     fun getNextTransitionTimeMillis(now: java.util.Calendar = java.util.Calendar.getInstance()): Long? {
         if (!isScheduleEnabled || startTimeMinutes == null || endTimeMinutes == null) return null
 
@@ -35,11 +69,19 @@ data class Rule(
             }
             val dayOfWeek = checkDay.get(java.util.Calendar.DAY_OF_WEEK) // 1=Sun, 2=Mon...
             val dayMask = 1 shl (dayOfWeek - 1)
+            val previousDay = (checkDay.clone() as java.util.Calendar).apply {
+                add(java.util.Calendar.DAY_OF_YEAR, -1)
+            }
+            val previousDayMask = 1 shl (previousDay.get(java.util.Calendar.DAY_OF_WEEK) - 1)
+            val crossesMidnight = endTimeMinutes < startTimeMinutes
 
             if ((daysToBlock and dayMask) != 0) {
-                // Potential transitions on this day: start of schedule and end of schedule
-                // We add 1 to endTimeMinutes because it's inclusive in NetZoneVpnService
-                val transitions = listOf(startTimeMinutes, (endTimeMinutes + 1) % 1440)
+                val transitions = mutableListOf(startTimeMinutes)
+
+                if (!crossesMidnight) {
+                    // We add 1 to endTimeMinutes because it's inclusive in NetZoneVpnService.
+                    transitions += (endTimeMinutes + 1) % 1440
+                }
 
                 for (tMinutes in transitions) {
                     val transitionTime = (checkDay.clone() as java.util.Calendar).apply {
@@ -60,17 +102,19 @@ data class Rule(
                     }
                 }
             }
-            
-            // Also consider the start of the day (00:00) as a transition if the day selection changes
-            val startOfDay = (checkDay.clone() as java.util.Calendar).apply {
-                set(java.util.Calendar.HOUR_OF_DAY, 0)
-                set(java.util.Calendar.MINUTE, 0)
-                set(java.util.Calendar.SECOND, 0)
-                set(java.util.Calendar.MILLISECOND, 0)
-            }
-            val timeStart = startOfDay.timeInMillis
-            if (timeStart > currentMillis && timeStart < minTime) {
-                minTime = timeStart
+
+            if (crossesMidnight && (daysToBlock and previousDayMask) != 0) {
+                val overnightEnd = (endTimeMinutes + 1) % 1440
+                val transitionTime = (checkDay.clone() as java.util.Calendar).apply {
+                    set(java.util.Calendar.HOUR_OF_DAY, overnightEnd / 60)
+                    set(java.util.Calendar.MINUTE, overnightEnd % 60)
+                    set(java.util.Calendar.SECOND, 0)
+                    set(java.util.Calendar.MILLISECOND, 0)
+                }
+                val time = transitionTime.timeInMillis
+                if (time > currentMillis && time < minTime) {
+                    minTime = time
+                }
             }
         }
 

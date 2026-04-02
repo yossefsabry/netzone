@@ -8,7 +8,6 @@ IssueTracker: https://github.com/yossefsabry/netzone/issues
 Changelog: https://github.com/yossefsabry/netzone/releases
 
 AutoName: NetZone
-Summary: Non-root firewall with per-app network controls
 Description: |-
   NetZone is a non-root Android firewall that uses Android VpnService to
   control internet access per app.

@@ -1,0 +1,14 @@
+NetZone is a non-root Android firewall that gives you per-app control over internet access.
+
+It uses Android VpnService to filter traffic locally on your device.
+
+Key features:
+- Block internet access per app on Wi-Fi, mobile data, and roaming.
+- Create schedule-based blocking windows.
+- Apply daily usage limits with automatic rule enforcement.
+- Keep processing local, without remote filtering servers.
+
+Permissions are used only for firewall behavior:
+- VPN permission to route and filter app traffic.
+- Usage Access for daily usage limits.
+- Notification permission for foreground service status.

@@ -1,8 +1,6 @@
 Categories:
-  - Internet
-  - Security
+  - Firewall
 License: MIT
-WebSite: https://github.com/yossefsabry/netzone
 SourceCode: https://github.com/yossefsabry/netzone
 IssueTracker: https://github.com/yossefsabry/netzone/issues
 Changelog: https://github.com/yossefsabry/netzone/releases
@@ -12,16 +10,20 @@ AutoName: NetZone
 RepoType: git
 Repo: https://github.com/yossefsabry/netzone.git
 
+AllowedAPKSigningKeys:
+  - 79f233feb1a532e3ea384ee2b8ffa35d30d9f030990f7f20cfaaba1afe4d8cc0
+
+Binaries: https://github.com/yossefsabry/netzone/releases/download/v1/netzone_v1.1.0.apk
+
 Builds:
   - versionName: 1.1.0
     versionCode: 2
     commit: 2d7d654ae0ea8eb5b57da0f0ec50ab5d9adf51fa
+    subdir: app
     gradle:
       - yes
-    output: app/build/outputs/apk/release/app-release-unsigned.apk
 
-AutoUpdateMode: None
+AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9].*$
 CurrentVersion: 1.1.0
 CurrentVersionCode: 2
-
